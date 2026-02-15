@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Лицей</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+    --green:#1e7f4f;
+    --green-light:#3ddc84;
+    --accent:#00ffb3;
+    --glass:rgba(0,0,0,0.2); /* ещё прозрачнее */
+}
+
+/* ===== ОБЩИЕ СТИЛИ ===== */
+*{box-sizing:border-box}
+html{scroll-behavior:auto;}
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    min-height:100vh;
+    background:#0b1511;
+    color:white;
+    overflow-x:hidden;
+}
+
+.background{
+    position:fixed;
+    inset:0;
+    background:url("school.jpg") center/cover no-repeat;
+    filter:brightness(.75) contrast(1.1) saturate(1.15);
+    z-index:-2;
+}
+
+.overlay{
+    position:fixed;
+    inset:0;
+    background:linear-gradient(135deg,rgba(0,0,0,.45),rgba(0,50,30,.35));
+    z-index:-1;
+}
+
+.logo{
+    position:fixed;
+    top:25px;
+    left:25px;
+    width:110px;
+    z-index:5;
+    opacity:.95;
+    transition:opacity .2s;
+}
+.logo:hover{opacity:1;}
+
+/* ===== ЧАСЫ (Главный экран) ===== */
+.clock{
+    position:fixed;
+    top:25px;
+    right:25px;
+    font-size:48px;
+    font-weight:700;
+    color:#00ffb3;
+    z-index:5;
+    background:rgba(0,0,0,.3);
+    padding:10px 20px;
+    border-radius:15px;
+    font-family:'Orbitron', sans-serif;
+    letter-spacing:1px;
+    text-shadow:0 0 4px #00ffb3;
+}
+
+/* ===== ТАЙМЕР ДО ЗВОНКА ===== */
+.next-bell-timer{
+    position:fixed;
+    top:120px;
+    right:25px;
+    font-size:32px;
+    font-weight:600;
+    color:#00ffb3;
+    font-family:'Orbitron', sans-serif;
+    letter-spacing:1px;
+    text-shadow:0 0 4px #00ffb3;
+    z-index:5;
+    transition:color 0.3s;
+}
+.next-bell-timer.warning{
+    color:#ff4444;
+    text-shadow:0 0 8px #ff4444;
+    animation: blink 0.5s ease-in-out infinite alternate;
+}
+@keyframes blink{
+    from{opacity:1;}
+    to{opacity:0.8;}
+}
+
+/* ===== МЕНЮ ===== */
+.app{
+    position:relative;
+    z-index:2;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    animation:fadeIn 1.2s ease;
+}
+
+h1{
+    font-size:70px;
+    margin-bottom:60px;
+    text-shadow:0 10px 30px rgba(0,0,0,.7);
+    letter-spacing:2px;
+}
+
+.menu{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:25px;
+    width:90%;
+    max-width:1000px;
+    justify-items:center;
+}
+
+.menu button{
+    width:220px;
+    height:65px;
+    border:none;
+    border-radius:35px;
+    font-size:18px;
+    font-weight:600;
+    color:white;
+    cursor:pointer;
+    background:linear-gradient(135deg,var(--green),#0f5a35);
+    box-shadow:0 5px 15px rgba(0,0,0,.6);
+    transition:all .2s ease;
+    padding:0 15px;
+}
+.menu button:hover{
+    transform:translateY(-4px) scale(1.03);
+    box-shadow:0 10px 25px rgba(0,0,0,.8);
+}
+
+/* ===== СТРАНИЦА ===== */
+.page{
+    position:absolute;
+    inset:0;
+    padding:120px 100px;
+    overflow:auto;
+    display:none;
+}
+
+.page.active{
+    display:block;
+    animation:pageIn .5s ease;
+}
+
+@keyframes pageIn{
+    from{opacity:0;}
+    to{opacity:1;}
+}
+
+.card{
+    background:var(--glass);
+    border-radius:35px;
+    padding:60px;
+    box-shadow:0 20px 50px rgba(0,0,0,.6);
+    font-size:20px;
+    line-height:1.6;
+}
+
+/* ===== Reveal ===== */
+.reveal{
+    opacity:0;
+    transition:opacity .5s ease;
+}
+.reveal.visible{
+    opacity:1;
+}
+
+/* ===== Новости ===== */
+.news-card{
+    margin-top:50px;
+    padding:35px;
+    border-radius:28px;
+    background:rgba(0,0,0,0.3); /* прозрачнее */
+    box-shadow:0 10px 30px rgba(0,0,0,.6);
+    transition:transform .2s;
+}
+.news-card:hover{transform:translateY(-3px);}
+.news-date{font-size:14px; opacity:.7; margin-bottom:15px;}
+.news-text{font-size:17px; line-height:1.7;}
+.gallery{
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:18px;
+}
+.gallery img{
+    width:100%;
+    border-radius:18px;
+    cursor:pointer;
+    transition:transform .2s;
+}
+.gallery img:hover{transform:scale(1.05);}
+
+/* ===== Стили для расписания ===== */
+.schedule-grid{
+    display:flex;
+    justify-content:center;
+    gap:40px;
+    flex-wrap:wrap;
+    margin-top:30px;
+}
+.schedule-item{
+    width:min(450px,100%);
+    text-align:center;
+}
+.schedule-item p{
+    margin:0 0 15px 0;
+    font-size:1.4rem;
+    font-weight:600;
+    color:var(--accent);
+    text-shadow:0 2px 5px rgba(0,0,0,0.5);
+}
+.schedule-item img{
+    width:100%;
+    height:auto;
+    border-radius:25px;
+    cursor:pointer;
+    transition:transform 0.2s;
+    box-shadow:0 10px 25px rgba(0,0,0,0.5);
+}
+.schedule-item img:hover{
+    transform:scale(1.02);
+}
+
+/* ===== Стили для страницы Меню ===== */
+.food-container{
+    display:flex;
+    flex-direction:column;
+    gap:50px;
+    margin-top:30px;
+}
+.food-cycle{
+    background:rgba(0,0,0,0.3); /* прозрачнее */
+    border-radius:30px;
+    padding:30px;
+    transition:transform .2s;
+}
+.food-cycle:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 25px rgba(0,0,0,0.4);
+}
+.food-cycle h3{
+    color:var(--accent);
+    font-size:2rem;
+    margin:0 0 30px 0;
+    text-shadow:0 2px 5px rgba(0,0,0,0.5);
+    text-align:center;
+    border-bottom:2px solid var(--green-light);
+    padding-bottom:10px;
+}
+.meal{
+    margin-bottom:40px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+.meal:last-child{
+    margin-bottom:0;
+}
+.meal-title{
+    font-size:2rem;
+    color:var(--accent);
+    margin:0 0 20px 0;
+    text-align:center;
+    width:100%;
+}
+.meal img{
+    width:100%;
+    max-width:500px;
+    border-radius:25px;
+    cursor:pointer;
+    margin-bottom:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.6);
+    transition:transform 0.2s;
+}
+.meal img:hover{
+    transform:scale(1.02);
+}
+.meal p{
+    font-size:1.2rem;
+    line-height:1.6;
+    text-align:center;
+    max-width:600px;
+    margin:0;
+    background:rgba(0,0,0,0.3);
+    padding:15px 20px;
+    border-radius:30px;
+}
+
+/* ===== Лайтбокс ===== */
+.lightbox{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.9);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    animation:fadeIn .2s ease;
+}
+.lightbox img{
+    max-width:90%;
+    max-height:90%;
+    border-radius:25px;
+    animation:zoomIn .2s ease;
+}
+@keyframes zoomIn{from{opacity:0}to{opacity:1}}
+
+.timer-wrapper{
+    display:flex;
+    gap:35px;
+    justify-content:center;
+    margin-top:50px;
+    flex-wrap:wrap;
+}
+.time-box{
+    background:rgba(0,0,0,.5);
+    padding:35px 50px;
+    border-radius:30px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.7);
+    transition:transform .2s;
+}
+.time-box:hover{transform:scale(1.05);}
+.time-box span{display:block; font-size:52px; font-weight:700; color:var(--accent);}
+
+.back{
+    position:fixed;
+    top:30px;
+    right:30px;
+    padding:12px 22px;
+    border-radius:25px;
+    border:none;
+    background:var(--green);
+    color:white;
+    cursor:pointer;
+    display:none;
+}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="background" id="bg"></div>
+<div class="overlay"></div>
+<img src="logo.png" class="logo">
+<div class="clock" id="clock">00:00:00</div>
+<div class="next-bell-timer" id="nextBellTimer">До звонка: --:--</div>
+
+<div class="app" id="mainApp">
+<h1>Добро пожаловать</h1>
+<div class="menu">
+<button onclick="openPage('news')">Новости</button>
+<button onclick="openPage('about')">О школе</button>
+<button onclick="openPage('projects')">Наши проекты</button>
+<button onclick="openPage('olymp')">Олимпиады</button>
+<button onclick="openPage('safety')">Дни без травм</button>
+<button onclick="openPage('holidays')">До каникул</button>
+<button onclick="openPage('schedule')">Расписание</button>
+<button onclick="openPage('food')">Меню</button>
+</div>
+</div>
+
+<div id="page" class="page"></div>
+<button class="back" id="backBtn" onclick="closePage()">Назад</button>
+
+<script>
+// ===== Переменные =====
+const GROUP_ID = 145279634;
+const TOKEN = "a27a5ad4a27a5ad4a27a5ad40ca144bedfaa27aa27a5ad4cbea966411d118bc47d271c6";
+const page=document.getElementById("page");
+const main=document.getElementById("mainApp");
+const backBtn=document.getElementById("backBtn");
+const bg=document.getElementById("bg");
+const clockEl=document.getElementById("clock");
+const timerEl = document.getElementById("nextBellTimer");
+let idleTimeout, timerInterval, holidaysTimerInterval, bellTimerInterval;
+const startDate=new Date("2026-01-01T00:00:00");
+const holidaysDate=new Date("2026-02-23T00:00:00");
+
+// ===== ТОЧНОЕ РАСПИСАНИЕ ЗВОНКОВ =====
+const startTimes = [
+    8*3600+30*60,  // 8:30
+    9*3600+20*60,  // 9:20
+    10*3600+15*60, // 10:15
+    11*3600+5*60,  // 11:05
+    11*3600+55*60, // 11:55
+    12*3600+50*60, // 12:50
+    13*3600+40*60, // 13:40
+    14*3600+30*60, // 14:30
+    15*3600+15*60, // 15:15
+    16*3600        // 16:00
+];
+
+const endTimes = [
+    9*3600+10*60,  // 9:10
+    10*3600+0*60,  // 10:00
+    10*3600+55*60, // 10:55
+    11*3600+45*60, // 11:45
+    12*3600+35*60, // 12:35
+    13*3600+30*60, // 13:30
+    14*3600+20*60, // 14:20
+    15*3600+10*60, // 15:10
+    15*3600+55*60, // 15:55
+    16*3600+40*60  // 16:40
+];
+
+let events = [...startTimes, ...endTimes];
+events.sort((a, b) => a - b);
+
+// ===== Таймер до ближайшего звонка =====
+function updateBellTimer() {
+    const now = new Date();
+    const nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+    
+    let nextEventSec = events.find(sec => sec > nowSec);
+    if (nextEventSec === undefined) {
+        nextEventSec = events[0] + 24*3600;
+    }
+    
+    let diffSec = nextEventSec - nowSec;
+    if (diffSec < 0) diffSec += 24*3600;
+    
+    const minutes = Math.floor(diffSec / 60);
+    const seconds = diffSec % 60;
+    const timeStr = `${minutes}:${seconds.toString().padStart(2,'0')}`;
+    
+    timerEl.textContent = `До звонка: ${timeStr}`;
+    
+    if (diffSec <= 30) {
+        timerEl.classList.add('warning');
+    } else {
+        timerEl.classList.remove('warning');
+    }
+}
+
+updateBellTimer();
+bellTimerInterval = setInterval(updateBellTimer, 1000);
+
+// ===== Функция экранирования HTML =====
+function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        if (m === "'") return '&#039;';
+        return m;
+    });
+}
+
+// ===== ДАННЫЕ ДЛЯ СТРАНИЦЫ МЕНЮ (10 циклов) =====
+const cycles = [
+    {
+        breakfastImg: "breakfast1.jpg",
+        breakfastText: `Блины, молоко сгущенное c сахаром, соус ягодный, сыр полутвердый, чай с сахаром, хлебная корзина, фрукты свежие по сезонности`,
+        lunchImg: "lunch1.jpg",
+        lunchText: `Огурцы соленые, свекла отварная, морковь свежая / кукуруза консервированная, масло растительное, суп «Минестроне», печень по-строгановски, пюре картофельное, сок, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast2.jpg",
+        breakfastText: `Каша «Дружба», соус ягодный, чай с сахаром, йогурт фруктовый, хлебная корзина`,
+        lunchImg: "lunch2.jpg",
+        lunchText: `Помидоры, капуста пекинская, огурцы свежие, масло растительное, борщ с капустой и картофелем, говядина по-мексикански, гречка отварная рассыпчатая, компот из плодов сухих, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast3.jpg",
+        breakfastText: `Пудинг из творога запеченный, молоко сгущенное c сахаром, соус ягодный, какао на молоке, хлебная корзина, фрукты свежие по сезонности`,
+        lunchImg: "lunch3.jpg",
+        lunchText: `Огурцы свежие, морковь свежая / кукуруза консервированная, капуста свежая / горошек консервированный, масло растительное, суп гороховый, шницель рубленый куриный, макароны отварные с овощами, сок, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast4.jpg",
+        breakfastText: `Хлопья сладкие с молоком, сыр полутвердый, чай с сахаром, хлебная корзина, фрукты свежие по сезонности, печенье`,
+        lunchImg: "lunch4.jpg",
+        lunchText: `Помидоры, капуста свежая / горошек консервированный, огурцы свежие, масло растительное, суп картофельный с рисом, котлеты рыбные, картофель отварной с зеленью, кисель из смородины, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast5.jpg",
+        breakfastText: `Омлет, фрукты свежие по сезонности, какао на молоке, хлебная корзина, масло (порциями)`,
+        lunchImg: "lunch5.jpg",
+        lunchText: `Огурцы соленые, свекла отварная, морковь свежая / кукуруза консервированная, масло растительное, суп гороховый, пельмени отварные, сок, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast6.jpg",
+        breakfastText: `Вареники с творогом, молоко сгущенное c сахаром, соус ягодный, сыр полутвердый, чай с сахаром, хлебная корзина, фрукты свежие по сезонности`,
+        lunchImg: "lunch6.jpg",
+        lunchText: `Помидоры, капуста пекинская, огурцы свежие, масло растительное, рассольник, биточки рубленые куриные, капуста тушеная, компот из плодов свежих (яблоки), хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast7.jpg",
+        breakfastText: `Омлет, кекс с цукатами, какао на молоке, хлебная корзина`,
+        lunchImg: "lunch7.jpg",
+        lunchText: `Огурцы соленые, свекла отварная, морковь свежая / кукуруза консервированная, масло растительное, суп куриный, рагу из мяса птицы (курица), сок, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast8.jpg",
+        breakfastText: `Каша гречневая с молоком, соус ягодный, круассан, чай с сахаром, хлебная корзина, фрукты свежие по сезонности`,
+        lunchImg: "lunch8.jpg",
+        lunchText: `Помидоры, капуста пекинская, огурцы свежие, масло растительное, борщ «Сибирский», котлеты рыбные, макароны отварные с овощами, компот из плодов сухих, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast9.jpg",
+        breakfastText: `Суп молочный с вермишелью, соус ягодный, чай с сахаром, хлебная корзина, сыр полутвердый, йогурт фруктовый`,
+        lunchImg: "lunch9.jpg",
+        lunchText: `Огурцы свежие, морковь свежая / кукуруза консервированная, капуста свежая / горошек консервированный, масло растительное, суп «Минестроне», шницель рубленый куриный, картофель отварной с зеленью, сок, хлебная корзина`
+    },
+    {
+        breakfastImg: "breakfast10.jpg",
+        breakfastText: `Каша «Дружба», кофейный напиток злаковый на молоке, хлебная корзина, фрукты свежие по сезонности, печенье`,
+        lunchImg: "lunch10.jpg",
+        lunchText: `Помидоры, капуста свежая / горошек консервированный, огурцы свежие, масло растительное, щи «Новгородские», пельмени отварные, кисель из вишни, хлебная корзина`
+    }
+];
+
+// ===== Reveal =====
+const observer=new IntersectionObserver(entries=>{ entries.forEach(entry=>{ if(entry.isIntersecting){ entry.target.classList.add("visible"); }});},{threshold:0.15});
+function observeElements(){ document.querySelectorAll(".reveal").forEach(el=>observer.observe(el)); }
+
+// ===== Таймеры =====
+function updateSafetyTimer(){
+    const now=new Date(); const diff=now-startDate;
+    document.getElementById("days").innerText=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("hours").innerText=Math.floor((diff/(1000*60*60))%24);
+    document.getElementById("minutes").innerText=Math.floor((diff/(1000*60))%60);
+    document.getElementById("seconds").innerText=Math.floor((diff/1000)%60);
+}
+function startTimer(){ updateSafetyTimer(); clearInterval(timerInterval); timerInterval=setInterval(updateSafetyTimer,1000); }
+
+function updateHolidaysTimer(){
+    const now=new Date(); let diff=holidaysDate-now; if(diff<0) diff=0;
+    document.getElementById("holidaysDays").innerText=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("holidaysHours").innerText=Math.floor((diff/(1000*60*60))%24);
+    document.getElementById("holidaysMinutes").innerText=Math.floor((diff/(1000*60))%60);
+    document.getElementById("holidaysSeconds").innerText=Math.floor((diff/1000)%60);
+}
+function startHolidaysTimer(){ updateHolidaysTimer(); clearInterval(holidaysTimerInterval); holidaysTimerInterval=setInterval(updateHolidaysTimer,1000); }
+
+// ===== Часы главный экран =====
+function updateClock(){ const now=new Date(); clockEl.innerText=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`; }
+updateClock(); setInterval(updateClock,1000);
+
+// ===== Таймер бездействия =====
+function setupIdleTimer(){ clearTimeout(idleTimeout);
+    document.addEventListener("mousemove",resetIdleTimer);
+    document.addEventListener("keydown",resetIdleTimer);
+    document.addEventListener("touchstart",resetIdleTimer);
+    startIdleTimer();
+}
+function startIdleTimer(){ idleTimeout=setTimeout(()=>{ if(page.classList.contains("active")) closePage(); },60000); }
+function resetIdleTimer(){ clearTimeout(idleTimeout); startIdleTimer(); }
+
+// ===== Страницы =====
+function openPage(type){
+    main.style.display="none"; page.classList.add("active"); backBtn.style.display="block"; 
+    clockEl.style.display="none"; 
+    timerEl.style.display="none";
+    page.innerHTML=""; 
+    setupIdleTimer();
+
+    if(type==="news"){ 
+        page.innerHTML=`<div class="card"><h2>Новости</h2><div id="newsContainer">Загрузка...</div></div>`; 
+        loadNews(); 
+    }
+    if(type==="about"){ 
+        page.innerHTML=`<div class="card reveal"><h2>О школе</h2><p>Общее количество работников: 99 человек<br>Административные сотрудники: 5 человек<br>Педагогический состав: 94 человека<br>Количество классов: 36<br>Количество обучающихся: 1002</p></div>`; 
+        observeElements(); 
+        page.scrollTop = 0;
+    }
+    if(type==="projects"){ 
+        page.innerHTML=`<div class="card reveal"><h2>Наши проекты</h2><p>Информация будет добавлена.</p></div>`; 
+        observeElements(); 
+        page.scrollTop = 0;
+    }
+    
+    if(type==="olymp"){
+        page.innerHTML=`<div class="card reveal"><h2>Олимпиады</h2>
+        <p>История успеха! 📜✨<br><br>
+        Подведены итоги регионального ВсОШ по истории.<br>
+        Наши лицеисты — молодцы!<br><br>
+        <strong>ПОБЕДИТЕЛЬ:</strong><br>
+        Варвара Белова (10А) — браво! 👑<br><br>
+        <strong>ПРИЗЁРЫ:</strong><br>
+        🥈Матвей Гусев (8Б)<br>
+        🥈Арина Жукова (9В)<br>
+        🥈Валерия Никулина (11А)<br>
+        🥈Евгения Юсова (9Б)</p>
+        <p><strong>Наставник:</strong> Соловьева Мария Юрьевна</p>
+
+        <hr style="margin: 40px 0; border: none; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent);">
+
+        <p>🏆 ЗОЛОТОЙ СОСТАВ: УЧЕНИКИ + УЧИТЕЛЬ</p>
+        <p>Региональный этап ВсОШ по обществознанию позади, и у нас отличные новости!</p>
+        <p>Три ученика нашей школы стали ПРИЗЕРАМИ:<br>
+        🌟 Илья Корольков (9В)<br>
+        🌟 Карина Науменко (10А)<br>
+        🌟 Валерия Никулина (11А)</p>
+        <p><strong>Наставник:</strong> Лагода Валерия Александровна</p>
+        </div>`;
+        observeElements();
+        page.scrollTop = 0;
+    }
+
+    if(type==="safety"){ 
+        page.innerHTML=`<div class="card reveal"><h2>Дни без травм</h2><div class="timer-wrapper"><div class="time-box"><span id="days">0</span><label>ДНЕЙ</label></div><div class="time-box"><span id="hours">0</span><label>ЧАСОВ</label></div><div class="time-box"><span id="minutes">0</span><label>МИНУТ</label></div><div class="time-box"><span id="seconds">0</span><label>СЕКУНД</label></div></div></div>`; 
+        observeElements(); 
+        startTimer(); 
+        page.scrollTop = 0;
+    }
+
+    if(type==="holidays"){ 
+        page.innerHTML=`<div class="card reveal"><h2>Счётчик дней до каникул</h2><div class="timer-wrapper"><div class="time-box"><span id="holidaysDays">0</span><label>ДНЕЙ</label></div><div class="time-box"><span id="holidaysHours">0</span><label>ЧАСОВ</label></div><div class="time-box"><span id="holidaysMinutes">0</span><label>МИНУТ</label></div><div class="time-box"><span id="holidaysSeconds">0</span><label>СЕКУНД</label></div></div></div>`; 
+        observeElements(); 
+        startHolidaysTimer(); 
+        page.scrollTop = 0;
+    }
+
+    if(type==="schedule"){ 
+        page.innerHTML=`<div class="card reveal"><h2>Расписание</h2>
+            <div class="schedule-grid">
+                <div class="schedule-item">
+                    <p>📚 Расписание уроков</p>
+                    <img src="schedule1.jpg" onclick="openImage('schedule1.jpg')" alt="Расписание уроков">
+                </div>
+                <div class="schedule-item">
+                    <p>🔔 Расписание звонков</p>
+                    <img src="schedule2.jpg" onclick="openImage('schedule2.jpg')" alt="Расписание звонков">
+                </div>
+            </div>
+        </div>`; 
+        observeElements(); 
+        page.scrollTop = 0;
+    }
+
+    if(type==="food"){
+        let foodHTML = `<div class="card"><h2>Меню</h2><div class="food-container">`;
+        cycles.forEach((cycle, index) => {
+            const breakfastTextSafe = escapeHTML(cycle.breakfastText);
+            const lunchTextSafe = escapeHTML(cycle.lunchText);
+            foodHTML += `
+                <div class="food-cycle reveal">
+                    <h3>🍽️ Цикл питания ${index+1}</h3>
+                    <div class="meal">
+                        <h4 class="meal-title">Завтрак</h4>
+                        <img src="${cycle.breakfastImg}" onclick="openImage('${cycle.breakfastImg}')" alt="Завтрак цикл ${index+1}">
+                        <p>${breakfastTextSafe}</p>
+                    </div>
+                    <div class="meal">
+                        <h4 class="meal-title">Обед</h4>
+                        <img src="${cycle.lunchImg}" onclick="openImage('${cycle.lunchImg}')" alt="Обед цикл ${index+1}">
+                        <p>${lunchTextSafe}</p>
+                    </div>
+                </div>
+            `;
+        });
+        foodHTML += `</div></div>`;
+        page.innerHTML = foodHTML;
+        observeElements();
+        page.scrollTop = 0;
+    }
+}
+
+function closePage(){ 
+    page.classList.remove("active"); 
+    page.innerHTML = ""; 
+    page.scrollTop = 0;
+    main.style.display = "flex"; 
+    backBtn.style.display = "none"; 
+    clockEl.style.display = "block"; 
+    timerEl.style.display = "block";
+    clearInterval(timerInterval); 
+    clearInterval(holidaysTimerInterval); 
+    clearTimeout(idleTimeout); 
+}
+
+// ===== Новости VK =====
+function loadNews(){ const script=document.createElement("script"); script.src=`https://api.vk.com/method/wall.get?owner_id=-${GROUP_ID}&count=5&access_token=${TOKEN}&v=5.199&callback=renderNews`; document.body.appendChild(script);}
+function renderNews(data){ 
+    const container=document.getElementById("newsContainer"); 
+    container.innerHTML=""; 
+    data.response.items.forEach(post=>{ 
+        if(!post.text && !post.attachments) return; 
+        const date=new Date(post.date*1000).toLocaleDateString("ru-RU"); 
+        let images=""; 
+        if(post.attachments){ 
+            images+=`<div class="gallery">`; 
+            post.attachments.forEach(att=>{if(att.type==="photo"){ const photo=att.photo.sizes.at(-1).url; images+=`<img src="${photo}" onclick="openImage('${photo}')">`;}}); 
+            images+=`</div>`;
+        } 
+        container.innerHTML+=`<div class="news-card reveal"><div class="news-date">${date}</div><div class="news-text">${post.text.replace(/\n/g,"<br>")}</div>${images}</div>`;
+    }); 
+    observeElements();
+    page.scrollTop = 0;
+}
+
+// ===== Лайтбокс =====
+function openImage(src){ 
+    let lb=document.createElement("div"); 
+    lb.className="lightbox"; 
+    lb.innerHTML=`<img src="${src}">`; 
+    lb.onclick=()=>document.body.removeChild(lb); 
+    document.body.appendChild(lb); 
+}
+</script>
+</body>
+</html>
